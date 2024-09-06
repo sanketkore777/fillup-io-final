@@ -24,7 +24,7 @@ const Form = ({ id }) => {
           setFormData({
             title: _formData.title,
             description: _formData.description,
-            questions: _formData.questions.map((ques) => ({
+            questions: _formData.questions.map((ques, idx) => ({
               ...ques,
               answer: ques.type === "checkbox" || "radio" ? [] : "",
             })),
