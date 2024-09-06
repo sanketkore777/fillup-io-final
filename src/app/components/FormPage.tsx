@@ -164,7 +164,6 @@ const Form = ({ id }) => {
                 onChange={(e) =>
                   handleInputChange(index, e.target.value, false)
                 }
-                className="w-full p-2  rounded"
               />
             )}
             {question.type === "number" && (
