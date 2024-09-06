@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import axios from "axios";
 
 const Page = () => {
-  const [form, setForm] = useState(null);
+  const [form, setForm] = useState({});
   const [prompt, setPrompt] = useState("");
 
   const fetchData = async () => {
