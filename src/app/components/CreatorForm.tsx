@@ -7,44 +7,46 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
+  Textarea,
 } from "@nextui-org/react";
 
-import { Textarea } from "@nextui-org/react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import "./form.css";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
-const CreatorForm = (props: {
-  title: "Untitled Form";
-  description: "Form description";
-  questions: [
-    {
-      type: "text";
-      text: "Your question";
-      options: [];
-      isRequired: true;
-    }
-  ];
-  isFile: false;
-}) => {
+// Define types for props and question structure
+interface Question {
+  type: string;
+  text: string;
+  options: string[];
+  isRequired: boolean;
+}
+
+interface FormProps {
+  title: string;
+  description: string;
+  questions: Question[];
+  isFile: boolean;
+}
+
+const CreatorForm: React.FC<FormProps> = (props) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
+
+  const [form, setForm] = useState<FormProps>({
     title: props.title,
     description: props.description,
     questions: [...props.questions],
     isFile: false,
   });
-  console.log(props, "Params.....///////");
-  const handleSendData = async (event) => {
+
+  const handleSendData = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setLoading(true);
     try {
-      event.preventDefault();
-      console.log("Sending...");
       const response = await axios.post("/api/creatorform", form);
-      console.log(response, "RESPONSE FORM BACKEND");
       if (response.data?.success) {
         toast.success("Form created!");
         router.push(`/#recents`);
@@ -53,80 +55,72 @@ const CreatorForm = (props: {
       }
       setLoading(false);
     } catch (error) {
+      console.error(error);
       setLoading(false);
-      console.log(error, "ERRORORORORO");
     }
   };
 
   useEffect(() => {
-    if (props.props) {
-      setForm({ ...props.props });
+    if (props) {
+      setForm({ ...props });
     }
-  }, []);
+  }, [props]);
 
   const addQuestion = () => {
-    setForm({
-      ...form,
+    setForm((prevForm) => ({
+      ...prevForm,
       questions: [
-        ...form.questions,
+        ...prevForm.questions,
         { type: "text", text: "New Question", options: [], isRequired: true },
       ],
-    });
+    }));
   };
 
-  const handleSwitchChange = (index, _bool) => {
-    const newQuestions = form.questions.map((question, i) => {
-      if (i === index) {
-        return { ...question, isRequired: !_bool };
-      }
-      return question;
-    });
+  const handleSwitchChange = (index: number, isRequired: boolean) => {
+    const newQuestions = form.questions.map((question, i) =>
+      i === index ? { ...question, isRequired: !isRequired } : question
+    );
     setForm({ ...form, questions: newQuestions });
   };
 
-  const handleInputChange = (index: Number, event) => {
-    const newQuestions = form.questions.map((question, i) => {
-      if (i === index) {
-        return { ...question, text: event.target.value };
-      }
-      return question;
-    });
+  const handleInputChange = (
+    index: number,
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const newQuestions = form.questions.map((question, i) =>
+      i === index ? { ...question, text: event.target.value } : question
+    );
     setForm({ ...form, questions: newQuestions });
   };
 
-  const handleTypeChange = (index, event) => {
-    if (event !== "file") {
-      const newQuestions = form.questions.map((question, i) => {
-        if (i === index) {
-          return { ...question, type: event, options: [] };
-        }
-        return question;
-      });
+  const handleTypeChange = (index: number, newType: string | undefined) => {
+    if (newType && newType !== "file") {
+      const newQuestions = form.questions.map((question, i) =>
+        i === index ? { ...question, type: newType, options: [] } : question
+      );
       setForm({ ...form, questions: newQuestions });
-    } else {
+    } else if (newType === "file") {
       if (form.isFile) {
-        toast.error("Multiple file upload are not allowed!");
+        toast.error("Multiple file upload not allowed!");
       } else {
-        const newQuestions = form.questions.map((question, i) => {
-          if (i === index) {
-            return { ...question, type: event, options: [] };
-          }
-          return question;
-        });
+        const newQuestions = form.questions.map((question, i) =>
+          i === index ? { ...question, type: newType, options: [] } : question
+        );
         setForm({ ...form, questions: newQuestions, isFile: true });
       }
     }
   };
 
-  const handleOptionChange = (qIndex, oIndex, event) => {
+  const handleOptionChange = (
+    qIndex: number,
+    oIndex: number,
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
     const newQuestions = form.questions.map((question, i) => {
       if (i === qIndex) {
-        const newOptions = question.options.map((option, j) => {
-          if (j === oIndex) {
-            return event.target.value;
-          }
-          return option;
-        });
+        const newOptions = question.options.map((option, j) =>
+          j === oIndex ? event.target.value : option
+        );
         return { ...question, options: newOptions };
       }
       return question;
@@ -134,39 +128,27 @@ const CreatorForm = (props: {
     setForm({ ...form, questions: newQuestions });
   };
 
-  const addOption = (qIndex) => {
-    const newQuestions = form.questions.map((question, i) => {
-      if (i === qIndex) {
-        return {
-          ...question,
-          options: [...question.options, "New Option"],
-        };
-      }
-      return question;
-    });
+  const addOption = (qIndex: number) => {
+    const newQuestions = form.questions.map((question, i) =>
+      i === qIndex
+        ? { ...question, options: [...question.options, "New Option"] }
+        : question
+    );
     setForm({ ...form, questions: newQuestions });
   };
 
-  const deleteQuestion = (index) => {
-    if (form.questions[index].type === "file") {
-      setForm({
-        ...form,
-        questions: form.questions.filter((_, i) => i !== index),
-        isFile: false,
-      });
-    } else {
-      setForm({
-        ...form,
-        questions: form.questions.filter((_, i) => {
-          return i !== index;
-        }),
-      });
-    }
+  const deleteQuestion = (index: number) => {
+    const updatedQuestions = form.questions.filter((_, i) => i !== index);
+    setForm({
+      ...form,
+      questions: updatedQuestions,
+      isFile: form.questions[index].type === "file" ? false : form.isFile,
+    });
   };
 
   return (
     <div className="mainclass p-7 flex flex-col min-w-[390px] justify-center border-1  border-[#ccc] max-w-[740px] md:w-full text-gray-800 p-2 bg-white mt-20">
-      <form action="" onSubmit={(event) => handleSendData(event)}>
+      <form onSubmit={handleSendData}>
         <div className="rounded-lg">
           <div className="p-1 mb-2 rounded-md">
             <div className="mb-5">
@@ -219,7 +201,7 @@ const CreatorForm = (props: {
                   onChange={(e) => handleInputChange(qIndex, e)}
                 />
                 <div className="flex justify-end items-center h-5 m-1.5">
-                  <div className="flex justify-between items-center sm:h-3 scale-[90%] lg:gap-4 sm: gap-2">
+                  <div className="flex justify-between items-center sm:h-3 scale-[90%] lg:gap-4 sm:gap-2">
                     <Dropdown>
                       <DropdownTrigger>
                         <Button
@@ -236,7 +218,10 @@ const CreatorForm = (props: {
                         disallowEmptySelection
                         selectionMode="single"
                         onSelectionChange={(event) =>
-                          handleTypeChange(qIndex, event.anchorKey?.toString())
+                          handleTypeChange(
+                            qIndex,
+                            event.anchorKey?.toString()
+                          )
                         }
                       >
                         <DropdownItem key="text" value="text">
@@ -251,25 +236,23 @@ const CreatorForm = (props: {
                         <DropdownItem key="time" value="time">
                           Time
                         </DropdownItem>
-                        {!form.isFile ? (
+                        {!form.isFile && (
                           <DropdownItem key="file" value="file">
                             File
                           </DropdownItem>
-                        ) : (
-                          ""
                         )}
                         <DropdownItem key="radio" value="radio">
                           Radio
                         </DropdownItem>
                         <DropdownItem key="checkbox" value="checkbox">
-                          checkbox
+                          Checkbox
                         </DropdownItem>
                       </DropdownMenu>
                     </Dropdown>
                     <Switch
                       defaultSelected
                       isSelected={question.isRequired}
-                      onChange={(event) =>
+                      onChange={() =>
                         handleSwitchChange(qIndex, question.isRequired)
                       }
                       size="sm"
@@ -278,7 +261,7 @@ const CreatorForm = (props: {
                     </Switch>
                   </div>
                 </div>
-                <div className="flex flex-col ">
+                <div className="flex flex-col">
                   {(question.type === "radio" ||
                     question.type === "checkbox") && (
                     <div className="flex flex-wrap">
@@ -298,74 +281,47 @@ const CreatorForm = (props: {
                             radius="none"
                             isRequired={true}
                             type="text"
-                            className="mt-1 max-w-48"
+                            className="mt-1 max-w-4xl w-full border-1 border-[#ccc]"
                             value={option}
                             onChange={(e) =>
                               handleOptionChange(qIndex, oIndex, e)
                             }
                           />
-                          <Button
-                            size="sm"
-                            variant="light"
-                            color="danger"
-                            className="text-xs text-red-500"
-                            onClick={() => {
-                              const newOptions = question.options.filter(
-                                (_, j) => j !== oIndex
-                              );
-                              const newQuestions = form.questions.map(
-                                (q, i) => {
-                                  if (i === qIndex) {
-                                    return { ...q, options: newOptions };
-                                  }
-                                  return q;
-                                }
-                              );
-                              setForm({ ...form, questions: newQuestions });
-                            }}
-                          >
-                            Remove
-                          </Button>
                         </div>
                       ))}
                       <Button
-                        className="mt-2"
-                        color="primary"
-                        variant="bordered"
+                        variant="flat"
                         size="sm"
                         onClick={() => addOption(qIndex)}
                       >
-                        Add Option
+                        Add option
                       </Button>
                     </div>
                   )}
                 </div>
               </div>
             ))}
-            <div className="flex justify-end">
-              <Button
-                className="m-2"
-                size="sm"
-                color="primary"
-                variant="flat"
-                onClick={addQuestion}
-              >
-                Add Question
-              </Button>
-            </div>
+            <Button
+              variant="bordered"
+              size="sm"
+              className="mt-5"
+              onClick={addQuestion}
+            >
+              Add question
+            </Button>
           </div>
         </div>
-        {form.questions.length ? (
+        <div className="flex justify-center m-2 p-4">
           <Button
             isLoading={loading}
+            loadingText="Creating form"
             type="submit"
-            className="w-full p-1"
-            size="md"
             color="primary"
+            className="mx-auto"
           >
-            Create Form
+            Create form
           </Button>
-        ) : null}
+        </div>
       </form>
     </div>
   );
