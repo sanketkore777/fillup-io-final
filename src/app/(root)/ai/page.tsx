@@ -53,7 +53,7 @@ const Page = () => {
             Generate
           </button>
         </div>
-        {form && (
+        {form ? (
           <CreatorForm
             title={form.title}
             description={form.description}
@@ -65,7 +65,7 @@ const Page = () => {
             }))}
             isFile={form.isFile}
           />
-        )}
+        ): null}
       </div>
     </div>
   );
