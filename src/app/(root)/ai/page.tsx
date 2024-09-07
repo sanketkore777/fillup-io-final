@@ -3,9 +3,24 @@ import CreatorForm from "@/app/components/CreatorForm";
 import React, { useState } from "react";
 import axios from "axios";
 
+// Define the form structure
+interface Question {
+  type: string;
+  text: string;
+  options: string[];
+  isRequired: boolean;
+}
+
+interface FormState {
+  title: string;
+  description: string;
+  questions: Question[];
+  isFile: boolean;
+}
+
 const Page = () => {
-  const [form, setForm] = useState({});
-  const [prompt, setPrompt] = useState("");
+  const [form, setForm] = useState<FormState | null>(null); // Use FormState or null
+  const [prompt, setPrompt] = useState<string>("");
 
   const fetchData = async () => {
     try {
@@ -65,10 +80,11 @@ const Page = () => {
             }))}
             isFile={form.isFile}
           />
-        ): null}
+        ) : null}
       </div>
     </div>
   );
 };
 
 export default Page;
+
