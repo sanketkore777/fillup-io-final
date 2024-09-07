@@ -40,7 +40,7 @@ const Form = ({ id }) => {
     fetchData();
   }, []);
 
-  const handleInputChange = (index, value, isCheckbox, option) => {
+  const handleInputChange = (index, value, isCheckbox, option = "") => {
     const newQuestions = [...formData.questions];
     if (isCheckbox) {
       const currentAnswers = newQuestions[index].answer || [];
@@ -215,7 +215,12 @@ const Form = ({ id }) => {
                         checked={question.answer[0] === option}
                         required={question.isRequired}
                         onChange={(e) =>
-                          handleInputChange(index, e.target.value, false)
+                          handleInputChange(
+                            index,
+                            e.target.value,
+                            false,
+                            option
+                          )
                         }
                       />
                       <span className="ml-2">{option}</span>

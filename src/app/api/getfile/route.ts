@@ -9,12 +9,15 @@ cloudinary.v2.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-function streamUpload(buffer: Buffer, fileName: string): Promise<cloudinary.UploadApiResponse | undefined> {
+function streamUpload(
+  buffer: Buffer,
+  fileName: string
+): Promise<cloudinary.UploadApiResponse | undefined> {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.v2.uploader.upload_stream(
       {
         folder: "fillup-files",
-        resource_type: 'raw', // Use 'raw' for all types of files
+        resource_type: "raw", // Use 'raw' for all types of files
         public_id: fileName, // Use the file name with extension
         use_filename: true, // Use the original filename
         unique_filename: false, // Prevent Cloudinary from changing the filename
@@ -31,16 +34,19 @@ function streamUpload(buffer: Buffer, fileName: string): Promise<cloudinary.Uplo
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const formData = await request.formData();
-    const file = formData.get("file") as Blob | null;
+    const file = formData.get("file") as File | null; // Cast to `File`
 
     if (!file) {
-      return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "No file provided" },
+        { status: 400 }
+      );
     }
 
     // Extract the file name and extension
-    const fileName = file.name;
+    const fileName = file.name; // No need for optional chaining if we know it's a File
 
-    // Convert the Blob to a Buffer
+    // Convert the Blob (File) to a Buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
@@ -48,21 +54,37 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const uploadResult = await streamUpload(buffer, fileName);
 
     if (!uploadResult) {
-      return NextResponse.json({ success: false, error: "Failed to upload file" }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "Failed to upload file" },
+        { status: 500 }
+      );
     }
 
     // Send the Cloudinary URL as a response
-    return NextResponse.json({ success: true, url: uploadResult.secure_url }, { status: 200 });
+    return NextResponse.json(
+      { success: true, url: uploadResult.secure_url },
+      { status: 200 }
+    );
   } catch (error: any) {
     console.error(error);
 
-    if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED' || error.code === 'EAI_AGAIN') {
+    if (
+      error.code === "ENOTFOUND" ||
+      error.code === "ECONNREFUSED" ||
+      error.code === "EAI_AGAIN"
+    ) {
       return NextResponse.json(
-        { success: false, message: "Network error, please check your connection." },
+        {
+          success: false,
+          message: "Network error, please check your connection.",
+        },
         { status: 503 }
       );
     }
 
-    return NextResponse.json({ success: false, message: "Something went wrong" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: "Something went wrong" },
+      { status: 500 }
+    );
   }
 }

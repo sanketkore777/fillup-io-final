@@ -22,7 +22,6 @@ export default function Error({
           Something went wrong. We’re working on it!
         </p>
         <Button
-          auto
           className="bg-blue-600 text-white hover:bg-blue-700"
           onClick={() => reset()}
         >

@@ -2,36 +2,62 @@ import React from "react";
 import CreatorForm from "@/app/components/CreatorForm";
 import axios from "axios";
 
-const Page = async ({ params }: { params: { key: string } }) => {
-  let data;
+// Define the type for a question
+interface Question {
+  type: string;
+  text: string;
+  options: string[];
+  isRequired: boolean;
+}
+
+// Define the type for the form data
+interface FormData {
+  title: string;
+  description: string;
+  questions: Question[];
+  isFile: boolean;
+}
+
+interface Params {
+  params: {
+    key: string;
+  };
+}
+
+const Page = async ({ params }: Params) => {
+  let data: FormData | null = null; // Initialize data as null or FormData
+
   try {
     const response = await axios.get(
       `${process.env.NEXT_PUBLIC_API_URL}/api/gettemplates/${params.key}`
     );
 
     if (response.data.success) {
-      data = { ...response.data.data, isFile: false };
+      data = {
+        ...response.data.data,
+        isFile: false, // Ensure isFile is included in data
+      };
     } else {
-      throw new Error("Something Went wrong!");
+      throw new Error("Something went wrong!");
     }
 
     return (
       <div className="flex flex-col items-center gap-6 p-6 max-w-3xl mx-auto">
         <h2 className="text-3xl font-semibold text-center">Templates</h2>
         <div className="w-full bg-white p-6 shadow-md rounded-lg">
-          <CreatorForm
-            props={{
-              title: data.title,
-              description: data.description,
-              questions: data.questions.map((que) => ({
+          {data && (
+            <CreatorForm
+              title={data.title}
+              description={data.description}
+              questions={data.questions.map((que) => ({
                 type: que.type,
                 text: que.text,
-                options: [...que?.options],
+                options: [...que.options],
                 isRequired: que.isRequired,
-              })),
-              isFile: false,
-            }}
-          />
+              }))}
+              isFile={false}
+            />
+          )}
         </div>
       </div>
     );

@@ -99,7 +99,7 @@ const FormCard = () => {
             </div>
           ))
       ) : (
-        <NoDataPlaceholder DATA={"Forms"} />
+        <NoDataPlaceholder data={"Forms"} />
       )}
     </div>
   );

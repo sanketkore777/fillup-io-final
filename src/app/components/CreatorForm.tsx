@@ -7,45 +7,57 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-  Textarea,
 } from "@nextui-org/react";
-
-import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { Textarea } from "@nextui-org/react";
+import React, { useEffect, useState } from "react";
 import "./form.css";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
-// Define types for props and question structure
-interface Question {
+// Define default props type
+type QuestionType = {
   type: string;
   text: string;
   options: string[];
   isRequired: boolean;
-}
+};
 
-interface FormProps {
+type FormProps = {
   title: string;
   description: string;
-  questions: Question[];
+  questions: QuestionType[];
   isFile: boolean;
-}
+};
 
-const CreatorForm: React.FC<FormProps> = (props) => {
+const defaultFormProps: FormProps = {
+  title: "Untitled Form",
+  description: "Form description",
+  questions: [
+    {
+      type: "text",
+      text: "Your question",
+      options: [],
+      isRequired: true,
+    },
+  ],
+  isFile: false,
+};
+
+const CreatorForm = (props: Partial<FormProps> = defaultFormProps) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-
   const [form, setForm] = useState<FormProps>({
-    title: props.title,
-    description: props.description,
-    questions: [...props.questions],
-    isFile: false,
+    title: props.title || defaultFormProps.title,
+    description: props.description || defaultFormProps.description,
+    questions: props.questions || [...defaultFormProps.questions],
+    isFile: props.isFile || defaultFormProps.isFile,
   });
 
-  const handleSendData = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSendData = async (event) => {
     setLoading(true);
     try {
+      event.preventDefault();
       const response = await axios.post("/api/creatorform", form);
       if (response.data?.success) {
         toast.success("Form created!");
@@ -55,72 +67,85 @@ const CreatorForm: React.FC<FormProps> = (props) => {
       }
       setLoading(false);
     } catch (error) {
-      console.error(error);
       setLoading(false);
+      toast.error("An error occurred!");
     }
   };
 
   useEffect(() => {
     if (props) {
-      setForm({ ...props });
+      setForm({
+        title: props.title || defaultFormProps.title,
+        description: props.description || defaultFormProps.description,
+        questions: props.questions || [...defaultFormProps.questions],
+        isFile: props.isFile || defaultFormProps.isFile,
+      });
     }
   }, [props]);
 
   const addQuestion = () => {
-    setForm((prevForm) => ({
-      ...prevForm,
+    setForm({
+      ...form,
       questions: [
-        ...prevForm.questions,
+        ...form.questions,
         { type: "text", text: "New Question", options: [], isRequired: true },
       ],
-    }));
+    });
   };
 
-  const handleSwitchChange = (index: number, isRequired: boolean) => {
-    const newQuestions = form.questions.map((question, i) =>
-      i === index ? { ...question, isRequired: !isRequired } : question
-    );
+  const handleSwitchChange = (index, _bool) => {
+    const newQuestions = form.questions.map((question, i) => {
+      if (i === index) {
+        return { ...question, isRequired: !_bool };
+      }
+      return question;
+    });
     setForm({ ...form, questions: newQuestions });
   };
 
-  const handleInputChange = (
-    index: number,
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
-    const newQuestions = form.questions.map((question, i) =>
-      i === index ? { ...question, text: event.target.value } : question
-    );
+  const handleInputChange = (index: Number, event) => {
+    const newQuestions = form.questions.map((question, i) => {
+      if (i === index) {
+        return { ...question, text: event.target.value };
+      }
+      return question;
+    });
     setForm({ ...form, questions: newQuestions });
   };
 
-  const handleTypeChange = (index: number, newType: string | undefined) => {
-    if (newType && newType !== "file") {
-      const newQuestions = form.questions.map((question, i) =>
-        i === index ? { ...question, type: newType, options: [] } : question
-      );
+  const handleTypeChange = (index, event) => {
+    if (event !== "file") {
+      const newQuestions = form.questions.map((question, i) => {
+        if (i === index) {
+          return { ...question, type: event, options: [] };
+        }
+        return question;
+      });
       setForm({ ...form, questions: newQuestions });
-    } else if (newType === "file") {
+    } else {
       if (form.isFile) {
-        toast.error("Multiple file upload not allowed!");
+        toast.error("Multiple file uploads are not allowed!");
       } else {
-        const newQuestions = form.questions.map((question, i) =>
-          i === index ? { ...question, type: newType, options: [] } : question
-        );
+        const newQuestions = form.questions.map((question, i) => {
+          if (i === index) {
+            return { ...question, type: event, options: [] };
+          }
+          return question;
+        });
         setForm({ ...form, questions: newQuestions, isFile: true });
       }
     }
   };
 
-  const handleOptionChange = (
-    qIndex: number,
-    oIndex: number,
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleOptionChange = (qIndex, oIndex, event) => {
     const newQuestions = form.questions.map((question, i) => {
       if (i === qIndex) {
-        const newOptions = question.options.map((option, j) =>
-          j === oIndex ? event.target.value : option
-        );
+        const newOptions = question.options.map((option, j) => {
+          if (j === oIndex) {
+            return event.target.value;
+          }
+          return option;
+        });
         return { ...question, options: newOptions };
       }
       return question;
@@ -128,27 +153,39 @@ const CreatorForm: React.FC<FormProps> = (props) => {
     setForm({ ...form, questions: newQuestions });
   };
 
-  const addOption = (qIndex: number) => {
-    const newQuestions = form.questions.map((question, i) =>
-      i === qIndex
-        ? { ...question, options: [...question.options, "New Option"] }
-        : question
-    );
+  const addOption = (qIndex) => {
+    const newQuestions = form.questions.map((question, i) => {
+      if (i === qIndex) {
+        return {
+          ...question,
+          options: [...question.options, "New Option"],
+        };
+      }
+      return question;
+    });
     setForm({ ...form, questions: newQuestions });
   };
 
-  const deleteQuestion = (index: number) => {
-    const updatedQuestions = form.questions.filter((_, i) => i !== index);
-    setForm({
-      ...form,
-      questions: updatedQuestions,
-      isFile: form.questions[index].type === "file" ? false : form.isFile,
-    });
+  const deleteQuestion = (index) => {
+    if (form.questions[index].type === "file") {
+      setForm({
+        ...form,
+        questions: form.questions.filter((_, i) => i !== index),
+        isFile: false,
+      });
+    } else {
+      setForm({
+        ...form,
+        questions: form.questions.filter((_, i) => {
+          return i !== index;
+        }),
+      });
+    }
   };
 
   return (
     <div className="mainclass p-7 flex flex-col min-w-[390px] justify-center border-1  border-[#ccc] max-w-[740px] md:w-full text-gray-800 p-2 bg-white mt-20">
-      <form onSubmit={handleSendData}>
+      <form action="" onSubmit={(event) => handleSendData(event)}>
         <div className="rounded-lg">
           <div className="p-1 mb-2 rounded-md">
             <div className="mb-5">
@@ -201,7 +238,7 @@ const CreatorForm: React.FC<FormProps> = (props) => {
                   onChange={(e) => handleInputChange(qIndex, e)}
                 />
                 <div className="flex justify-end items-center h-5 m-1.5">
-                  <div className="flex justify-between items-center sm:h-3 scale-[90%] lg:gap-4 sm:gap-2">
+                  <div className="flex justify-between items-center sm:h-3 scale-[90%] lg:gap-4 sm: gap-2">
                     <Dropdown>
                       <DropdownTrigger>
                         <Button
@@ -218,10 +255,7 @@ const CreatorForm: React.FC<FormProps> = (props) => {
                         disallowEmptySelection
                         selectionMode="single"
                         onSelectionChange={(event) =>
-                          handleTypeChange(
-                            qIndex,
-                            event.anchorKey?.toString()
-                          )
+                          handleTypeChange(qIndex, event.anchorKey?.toString())
                         }
                       >
                         <DropdownItem key="text" value="text">
@@ -247,79 +281,80 @@ const CreatorForm: React.FC<FormProps> = (props) => {
                         <DropdownItem key="checkbox" value="checkbox">
                           Checkbox
                         </DropdownItem>
+                        <DropdownItem key="select" value="select">
+                          Select
+                        </DropdownItem>
                       </DropdownMenu>
                     </Dropdown>
+
                     <Switch
-                      defaultSelected
+                      size="sm"
+                      color="danger"
                       isSelected={question.isRequired}
                       onChange={() =>
                         handleSwitchChange(qIndex, question.isRequired)
                       }
-                      size="sm"
                     >
                       Required
                     </Switch>
                   </div>
                 </div>
-                <div className="flex flex-col">
-                  {(question.type === "radio" ||
-                    question.type === "checkbox") && (
-                    <div className="flex flex-wrap">
-                      {question.options.map((option, oIndex) => (
-                        <div
-                          key={oIndex}
-                          className="flex gap-2 scale-[95%] ml-[-8px]"
-                        >
-                          <label
-                            htmlFor=""
-                            className="items-center justify-center pt-1.5 text-medium"
-                          >
-                            {oIndex + 1}
-                          </label>
-                          <Input
-                            size="sm"
-                            radius="none"
-                            isRequired={true}
-                            type="text"
-                            className="mt-1 max-w-4xl w-full border-1 border-[#ccc]"
-                            value={option}
-                            onChange={(e) =>
-                              handleOptionChange(qIndex, oIndex, e)
-                            }
-                          />
-                        </div>
-                      ))}
+                {(question.type === "radio" ||
+                  question.type === "checkbox" ||
+                  question.type === "select") && (
+                  <>
+                    {question.options.map((option, oIndex) => (
+                      <div className="mt-3" key={oIndex}>
+                        <Input
+                          radius="none"
+                          value={option}
+                          onChange={(event) =>
+                            handleOptionChange(qIndex, oIndex, event)
+                          }
+                          className="border-[#ccc]"
+                          size="sm"
+                        />
+                      </div>
+                    ))}
+                    <div className="my-2 w-full text-right">
                       <Button
-                        variant="flat"
+                        type="button"
+                        variant="bordered"
+                        color="primary"
                         size="sm"
                         onClick={() => addOption(qIndex)}
                       >
-                        Add option
+                        Add Option
                       </Button>
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             ))}
+          </div>
+
+          <div className="my-4 w-full text-right">
             <Button
-              variant="bordered"
               size="sm"
-              className="mt-5"
+              type="button"
+              variant="bordered"
+              className="w-full bg-primary"
               onClick={addQuestion}
             >
-              Add question
+              Add Question
             </Button>
           </div>
         </div>
-        <div className="flex justify-center m-2 p-4">
+
+        <div className="w-full flex mt-5 justify-center">
           <Button
-            isLoading={loading}
-            loadingText="Creating form"
-            type="submit"
-            color="primary"
-            className="mx-auto"
+            radius="full"
+            size="lg"
+            className="bg-primary w-44"
+            onClick={handleSendData}
+            isDisabled={loading}
           >
-            Create form
+            {loading ? "Sending..." : "Submit"}
           </Button>
         </div>
       </form>
